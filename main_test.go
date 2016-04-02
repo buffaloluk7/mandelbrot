@@ -14,12 +14,7 @@ func TestMandelbrotPerformance(t *testing.T) {
 	backendLeveled.SetLevel(logging.INFO, "")
 	logging.SetBackend(backendLeveled)
 
-	specs := mandelbrot.NewSpecs(
-		1000,
-		750,
-		mandelbrot.NewComplexNumber(-3, -1.5),
-		mandelbrot.NewComplexNumber(1, 1.5),
-		100)
+	specs := mandelbrot.ReadFromFile("data/mb0.spec")
 	generator := mandelbrot.NewMandelbrotGenerator(specs)
 
 	for i := 0; i < 10; i++ {
