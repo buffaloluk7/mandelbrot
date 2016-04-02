@@ -27,7 +27,7 @@ func NewMandelbrotGenerator(specs *Specs) *MandelbrotGenerator {
 
 func (g MandelbrotGenerator) CreateMandelbrot() *image.RGBA {
 	// Create tasks
-	taskChannel := make(chan *Task, g.numberOfTasks)
+	taskChannel := make(chan *Task)
 	go g.createTasks(taskChannel, g.numberOfTasks)
 
 	// Setup barrier (for calculation and processing go routines)
