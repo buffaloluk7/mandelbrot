@@ -24,7 +24,7 @@ func TestMandelbrotPerformance(t *testing.T) {
 
 	for i := 0; i < 10; i++ {
 		start := time.Now()
-		generator.CreateImage()
+		generator.CreateMandelbrot()
 		log.Infof("#%d: Took %s to create mandelbrot set.", i + 1, time.Since(start))
 	}
 }

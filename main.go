@@ -28,7 +28,7 @@ func main() {
 	generator := mandelbrot.NewMandelbrotGenerator(specs)
 
 	start := time.Now()
-	imageData := generator.CreateImage()
+	imageData := generator.CreateMandelbrot()
 	log.Infof("Took %s to create mandelbrot set.", time.Since(start))
 
 	file, err := os.Create("output.jpg")

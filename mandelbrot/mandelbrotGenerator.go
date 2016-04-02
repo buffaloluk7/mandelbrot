@@ -18,24 +18,7 @@ func NewMandelbrotGenerator(specs *Specs) *MandelbrotGenerator {
 	return &MandelbrotGenerator{specs:specs}
 }
 
-type Task struct {
-	startLineIndex, numberOfLines int
-}
-
-func NewTask(startLineIndex, numberOfLines int) *Task {
-	return &Task{startLineIndex:startLineIndex, numberOfLines:numberOfLines}
-}
-
-type MandelbrotValue struct {
-	value uint8
-	x, y  int
-}
-
-func NewMandelbrotValue(value uint8, x, y int) *MandelbrotValue {
-	return &MandelbrotValue{value:value, x:x, y:y}
-}
-
-func (g MandelbrotGenerator) CreateImage() *image.RGBA {
+func (g MandelbrotGenerator) CreateMandelbrot() *image.RGBA {
 	numberOfLinesPerTask := 30
 	numberOfTasks := int(math.Ceil(float64(g.specs.Height) / float64(numberOfLinesPerTask)))
 
