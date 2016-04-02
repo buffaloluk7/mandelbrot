@@ -36,7 +36,7 @@ func NewMandelbrotValue(value uint8, x, y int) *MandelbrotValue {
 }
 
 func (g MandelbrotGenerator) CreateImage() *image.RGBA {
-	numberOfLinesPerTask := 2
+	numberOfLinesPerTask := 10
 	numberOfTasks := int(math.Ceil(float64(g.specs.Height) / float64(numberOfLinesPerTask)))
 
 	taskChannel := make(chan *Task, numberOfTasks)
@@ -57,44 +57,48 @@ func (g MandelbrotGenerator) CreateImage() *image.RGBA {
 	close(taskChannel)
 
 	imageData := image.NewRGBA(image.Rect(0, 0, g.specs.Width - 1, g.specs.Height - 1))
-	value := make(chan *MandelbrotValue)
+	valuesChannel := make(chan *[]MandelbrotValue)
 	done := make(chan bool)
 
-	go func(imageData *image.RGBA, value <-chan *MandelbrotValue, done <-chan bool) {
+	go func(imageData *image.RGBA, valuesChannel <-chan *[]MandelbrotValue, done <-chan bool) {
 		for {
 			select {
-			case value := <-value:
-				r, g, b := value.value, value.value, value.value
-				imageData.SetRGBA(value.x, value.y, color.RGBA{R:r, G:g, B:b})
-			case <-done:
-				return
+			case values := <-valuesChannel:
+				for _, value := range *values {
+					r, g, b := value.value, value.value, value.value
+					imageData.SetRGBA(value.x, value.y, color.RGBA{R:r, G:g, B:b})
+				}
+			case <-done: return
 			}
 		}
-	}(imageData, value, done)
+	}(imageData, valuesChannel, done)
 
 	calculator := NewMandelbrotCalculator(g.specs.MaximumNumberOfIterations)
 	scaler := NewCoordinateScaler(g.specs.Minimum, g.specs.Maximum, g.specs.Width, g.specs.Height)
+
 	barrier := &sync.WaitGroup{}
+	barrier.Add(numberOfTasks)
 
 	for task := range taskChannel {
-		barrier.Add(1)
+		log.Debug("Start processing task with line index %d", task.startLineIndex)
 
-		log.Infof("Start processing task with line index %d", task.startLineIndex)
-
-		go func(task *Task, scaler *CoordinateScaler, calculator *MandelbrotCalculator, value chan <- *MandelbrotValue) {
+		go func(task *Task, scaler *CoordinateScaler, calculator *MandelbrotCalculator, valuesChannel chan <- *[]MandelbrotValue, barrier *sync.WaitGroup) {
 			defer barrier.Done()
+
+			values := make([]MandelbrotValue, task.numberOfLines * g.specs.Width)
 
 			for y := task.startLineIndex; y < task.startLineIndex + task.numberOfLines; y++ {
 				for x := 0; x < g.specs.Width; x++ {
 					complexNumber := scaler.Scale(x, y)
 					mandelbrotValue := (uint8)(calculator.FindValue(complexNumber))
 
-					value <- NewMandelbrotValue(mandelbrotValue, x, y)
+					index := (y - task.startLineIndex) * g.specs.Width + x
+					values[index] = *NewMandelbrotValue(mandelbrotValue, x, y)
 				}
 			}
 
-
-		}(task, scaler, calculator, value)
+			valuesChannel <- &values
+		}(task, scaler, calculator, valuesChannel, barrier)
 	}
 
 	barrier.Wait()

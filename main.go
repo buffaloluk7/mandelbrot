@@ -14,7 +14,7 @@ func main() {
 	// Setup logging
 	var backend = logging.NewLogBackend(os.Stdout, "", 0)
 	var backendLeveled = logging.AddModuleLevel(backend)
-	backendLeveled.SetLevel(logging.DEBUG, "")
+	backendLeveled.SetLevel(logging.INFO, "")
 	logging.SetBackend(backendLeveled)
 
 	// Parse console arguments
