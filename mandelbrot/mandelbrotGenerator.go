@@ -67,7 +67,7 @@ func (g MandelbrotGenerator) calculateMandelbrot(taskChannel <- chan *Task, valu
 
 	for {
 		task := <-taskChannel
-		log.Debug("Start processing task with line index %d", task.startLineIndex)
+		log.Debugf("Start processing task with line index %d", task.startLineIndex)
 
 		go func(task *Task, width int, scaler *CoordinateScaler, calculator *MandelbrotCalculator, valuesChannel chan <- *[]MandelbrotValue, barrier *sync.WaitGroup) {
 			defer barrier.Done()

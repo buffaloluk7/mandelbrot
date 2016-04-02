@@ -24,7 +24,7 @@ func main() {
 	}
 
 	specs := mandelbrot.ReadFromFile(os.Args[1])*/
-	specs := mandelbrot.ReadFromFile("data/mb1.spec")
+	specs := mandelbrot.ReadFromFile("data/mb0.spec")
 	generator := mandelbrot.NewMandelbrotGenerator(specs)
 
 	start := time.Now()
