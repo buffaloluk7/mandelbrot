@@ -5,8 +5,6 @@ import (
 	"github.com/op/go-logging"
 	"os"
 	"image/jpeg"
-	"image"
-	"image/color"
 	"time"
 )
 
@@ -16,7 +14,7 @@ func main() {
 	// Setup logging
 	var backend = logging.NewLogBackend(os.Stdout, "", 0)
 	var backendLeveled = logging.AddModuleLevel(backend)
-	backendLeveled.SetLevel(logging.INFO, "")
+	backendLeveled.SetLevel(logging.DEBUG, "")
 	logging.SetBackend(backendLeveled)
 
 	// Parse console arguments
@@ -26,22 +24,11 @@ func main() {
 	}
 
 	specs := mandelbrot.ReadFromFile(os.Args[1])*/
-	specs := mandelbrot.ReadFromFile("data/mb1.spec")
+	specs := mandelbrot.ReadFromFile("data/mb0.spec")
+	generator := mandelbrot.NewMandelbrotGenerator(specs)
 
 	start := time.Now()
-
-	calculator := mandelbrot.NewMandelbrotCalculator(specs.MaximumNumberOfIterations)
-	scaler := mandelbrot.NewCoordinateScaler(specs.Minimum, specs.Maximum, specs.Width, specs.Height)
-
-	imageData := image.NewRGBA(image.Rect(0, 0, specs.Width - 1, specs.Height - 1))
-
-	for y := 0; y < specs.Height; y++ {
-		for x := 0; x < specs.Width; x++ {
-			mandelbrotValue := calculateMandelbrotValue(scaler, calculator, x, y)
-			setPixel(imageData, mandelbrotValue, x, y)
-		}
-	}
-
+	imageData := generator.CreateImage()
 	log.Infof("Took %s to create mandelbrot set.", time.Since(start))
 
 	file, err := os.Create("output.jpg")
@@ -53,19 +40,4 @@ func main() {
 	if err := jpeg.Encode(file, imageData, &jpeg.Options{jpeg.DefaultQuality}); err != nil {
 		log.Panic("Unable to encode image.")
 	}
-}
-
-func calculateMandelbrotValue(scaler *mandelbrot.CoordinateScaler, calculator *mandelbrot.MandelbrotCalculator, x, y int) uint8 {
-	complexNumber := scaler.Scale(x, y)
-	return (uint8)(calculator.FindValue(complexNumber))
-}
-
-func setPixel(imageData *image.RGBA, mandelbrotValue uint8, x, y int) {
-	// Use smooth polynomials for r, g, b
-	//t := mandelbrotValue / specs.MaximumNumberOfIterations
-	//r := (uint8)(9 * (1 - t) * t * t * t * 255)
-	//g := (uint8)(15 * (1 - t) * (1 - t) * t * t * 255)
-	//b := (uint8)(9 * (1 - t) * (1 - t) * (1 - t) * t * 255)
-	r, g, b := mandelbrotValue, mandelbrotValue, mandelbrotValue
-	imageData.SetRGBA(x, y, color.RGBA{R:r, G:g, B:b})
 }

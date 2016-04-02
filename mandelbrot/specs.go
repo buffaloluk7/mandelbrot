@@ -2,7 +2,6 @@ package mandelbrot
 
 import (
 	"os"
-	"log"
 	"bufio"
 	"strconv"
 )
