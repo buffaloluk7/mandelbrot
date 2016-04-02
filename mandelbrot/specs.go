@@ -11,6 +11,15 @@ type Specs struct {
 	Minimum, Maximum *ComplexNumber
 }
 
+func NewSpecs(width, height int, minimum, maximum *ComplexNumber, maximumNumberOfIterations int) *Specs {
+	return &Specs{
+		Width:width,
+		Height:height,
+		Minimum:minimum,
+		Maximum:maximum,
+		MaximumNumberOfIterations:maximumNumberOfIterations}
+}
+
 func ReadFromFile(filePath string) *Specs {
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -28,12 +37,12 @@ func ReadFromFile(filePath string) *Specs {
 		log.Panic(err)
 	}
 
-	return &Specs{
-		Width:parseInt(arguments[0]),
-		Height:parseInt(arguments[1]),
-		Minimum:&ComplexNumber{real:parseFloat(arguments[2]), imaginary:parseFloat(arguments[3])},
-		Maximum:&ComplexNumber{real:parseFloat(arguments[4]), imaginary:parseFloat(arguments[5])},
-		MaximumNumberOfIterations:parseInt(arguments[6])}
+	return NewSpecs(
+		parseInt(arguments[0]),
+		parseInt(arguments[1]),
+		NewComplexNumber(parseFloat(arguments[2]), parseFloat(arguments[3])),
+		NewComplexNumber(parseFloat(arguments[4]), parseFloat(arguments[5])),
+		parseInt(arguments[6]))
 }
 
 func parseInt(value string) int {

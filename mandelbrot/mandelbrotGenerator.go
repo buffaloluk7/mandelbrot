@@ -58,32 +58,36 @@ func (g MandelbrotGenerator) CreateImage() *image.RGBA {
 
 	imageData := image.NewRGBA(image.Rect(0, 0, g.specs.Width - 1, g.specs.Height - 1))
 	valuesChannel := make(chan *[]MandelbrotValue)
-	done := make(chan bool)
 
-	go func(imageData *image.RGBA, valuesChannel <-chan *[]MandelbrotValue, done <-chan bool) {
+	quitBarrier := &sync.WaitGroup{}
+	quitBarrier.Add(numberOfTasks)
+
+	go func(imageData *image.RGBA, valuesChannel <-chan *[]MandelbrotValue, quitBarrier *sync.WaitGroup) {
 		for {
-			select {
-			case values := <-valuesChannel:
+			values := <-valuesChannel
+
+			go func(values *[]MandelbrotValue, imageData *image.RGBA, quitBarrier *sync.WaitGroup) {
+				defer quitBarrier.Done()
+
 				for _, value := range *values {
 					r, g, b := value.value, value.value, value.value
 					imageData.SetRGBA(value.x, value.y, color.RGBA{R:r, G:g, B:b})
 				}
-			case <-done: return
-			}
+			}(values, imageData, quitBarrier)
 		}
-	}(imageData, valuesChannel, done)
+	}(imageData, valuesChannel, quitBarrier)
 
 	calculator := NewMandelbrotCalculator(g.specs.MaximumNumberOfIterations)
 	scaler := NewCoordinateScaler(g.specs.Minimum, g.specs.Maximum, g.specs.Width, g.specs.Height)
 
-	barrier := &sync.WaitGroup{}
-	barrier.Add(numberOfTasks)
+	taskBarrier := &sync.WaitGroup{}
+	taskBarrier.Add(numberOfTasks)
 
 	for task := range taskChannel {
 		log.Debug("Start processing task with line index %d", task.startLineIndex)
 
-		go func(task *Task, scaler *CoordinateScaler, calculator *MandelbrotCalculator, valuesChannel chan <- *[]MandelbrotValue, barrier *sync.WaitGroup) {
-			defer barrier.Done()
+		go func(task *Task, scaler *CoordinateScaler, calculator *MandelbrotCalculator, valuesChannel chan <- *[]MandelbrotValue, taskBarrier *sync.WaitGroup) {
+			defer taskBarrier.Done()
 
 			values := make([]MandelbrotValue, task.numberOfLines * g.specs.Width)
 
@@ -98,11 +102,11 @@ func (g MandelbrotGenerator) CreateImage() *image.RGBA {
 			}
 
 			valuesChannel <- &values
-		}(task, scaler, calculator, valuesChannel, barrier)
+		}(task, scaler, calculator, valuesChannel, taskBarrier)
 	}
 
-	barrier.Wait()
-	done <- true
+	taskBarrier.Wait()
+	quitBarrier.Wait()
 
 	return imageData
 }

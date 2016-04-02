@@ -20,5 +20,5 @@ func (s CoordinateScaler) Scale(x, y int) *ComplexNumber {
 	imaginaryRange := s.maximum.imaginary - s.minimum.imaginary
 	cImaginary := float64(y) * (imaginaryRange / float64(s.maxY)) + s.minimum.imaginary
 
-	return &ComplexNumber{real:cReal, imaginary:cImaginary}
+	return NewComplexNumber(cReal, cImaginary)
 }
