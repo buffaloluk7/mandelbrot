@@ -11,7 +11,7 @@ import (
 var log = logging.MustGetLogger("mandelbrotGenerator")
 
 type MandelbrotGenerator struct {
-	specs *Specs
+	specs                               *Specs
 	numberOfTasks, numberOfLinesPerTask int
 }
 
@@ -32,15 +32,14 @@ func (g MandelbrotGenerator) CreateMandelbrot() *image.RGBA {
 
 	// Setup barrier (for calculation and processing go routines)
 	barrier := &sync.WaitGroup{}
-	barrier.Add(g.numberOfTasks * 2)
+	barrier.Add(g.numberOfTasks)
 
-	// Process tasks
-	valuesChannel := make(chan *[]MandelbrotValue)
-	go g.calculateMandelbrot(taskChannel, valuesChannel, barrier)
-
-	// Merge task results
 	imageData := image.NewRGBA(image.Rect(0, 0, g.specs.Width - 1, g.specs.Height - 1))
-	go g.processResults(imageData, valuesChannel, barrier)
+
+	numberOfGophers := 8
+	for i := 0; i < numberOfGophers; i++ {
+		go g.calculateMandelbrot(taskChannel, imageData, barrier)
+	}
 
 	// Wait for all go routines to finish
 	barrier.Wait()
@@ -61,46 +60,30 @@ func (g MandelbrotGenerator) createTasks(taskChannel chan <- *Task, numberOfTask
 	}
 }
 
-func (g MandelbrotGenerator) calculateMandelbrot(taskChannel <- chan *Task, valuesChannel chan <- *[]MandelbrotValue, barrier *sync.WaitGroup) {
+func (g MandelbrotGenerator) calculateMandelbrot(taskChannel <- chan *Task, imageData *image.RGBA, barrier *sync.WaitGroup) {
 	calculator := NewMandelbrotCalculator(g.specs.MaximumNumberOfIterations)
 	scaler := NewCoordinateScaler(g.specs.Minimum, g.specs.Maximum, g.specs.Width, g.specs.Height)
 
 	for {
 		task := <-taskChannel
 		log.Debugf("Start processing task with line index %d", task.startLineIndex)
+		values := make([]MandelbrotValue, task.numberOfLines * g.specs.Width)
 
-		go func(task *Task, width int, scaler *CoordinateScaler, calculator *MandelbrotCalculator, valuesChannel chan <- *[]MandelbrotValue, barrier *sync.WaitGroup) {
-			defer barrier.Done()
+		for y := task.startLineIndex; y < task.startLineIndex + task.numberOfLines; y++ {
+			for x := 0; x < g.specs.Width; x++ {
+				complexNumber := scaler.Scale(x, y)
+				mandelbrotValue := (uint8)(calculator.FindValue(complexNumber))
 
-			values := make([]MandelbrotValue, task.numberOfLines * width)
-
-			for y := task.startLineIndex; y < task.startLineIndex + task.numberOfLines; y++ {
-				for x := 0; x < width; x++ {
-					complexNumber := scaler.Scale(x, y)
-					mandelbrotValue := (uint8)(calculator.FindValue(complexNumber))
-
-					index := (y - task.startLineIndex) * width + x
-					values[index] = *NewMandelbrotValue(mandelbrotValue, x, y)
-				}
+				index := (y - task.startLineIndex) * g.specs.Width + x
+				values[index] = *NewMandelbrotValue(mandelbrotValue, x, y)
 			}
+		}
 
-			valuesChannel <- &values
-		}(task, g.specs.Width, scaler, calculator, valuesChannel, barrier)
-	}
-}
+		for _, value := range values {
+			r, g, b := value.value, value.value, value.value
+			imageData.SetRGBA(value.x, value.y, color.RGBA{R:r, G:g, B:b})
+		}
 
-func (g MandelbrotGenerator) processResults(imageData *image.RGBA, valuesChannel <- chan *[]MandelbrotValue, barrier *sync.WaitGroup) {
-	for {
-		values := <-valuesChannel
-		log.Debug("Add calculated mandelbrot values to image")
-
-		go func(values *[]MandelbrotValue, imageData *image.RGBA, barrier *sync.WaitGroup) {
-			defer barrier.Done()
-
-			for _, value := range *values {
-				r, g, b := value.value, value.value, value.value
-				imageData.SetRGBA(value.x, value.y, color.RGBA{R:r, G:g, B:b})
-			}
-		}(values, imageData, barrier)
+		barrier.Done()
 	}
 }
