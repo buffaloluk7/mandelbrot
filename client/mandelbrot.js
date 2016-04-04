@@ -52,7 +52,7 @@ var MandelbrotSpecCalculationService = function(){
         var newIteration = ((1 - percentage) + 1)*oldSpecs.iterations;
 
         return specFactory(oldSpecs.width, oldSpecs.height, newIteration,
-            oldSpecs.minR + realOffset, oldSpecs.minI + imaginaryOffset, oldSpecs.maxR - realOffset, oldSpecs.maxI - imaginaryOffset);
+            cReal - realOffset, cImaginary - imaginaryOffset, cReal + realOffset, cImaginary + imaginaryOffset);
     }
 
 
