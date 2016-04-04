@@ -10,6 +10,7 @@ import (
 
 type MandelbrotGenerator struct {
 	specs *specs.Specs
+	imageData *image.RGBA
 	numberOfTasks, numberOfLinesPerTask int
 }
 
@@ -39,11 +40,13 @@ var palette = func() Palette {
 }()
 
 func NewMandelbrotGenerator(specs *specs.Specs) *MandelbrotGenerator {
+	imageData := image.NewRGBA(image.Rect(0, 0, specs.Width - 1, specs.Height - 1))
 	numberOfLinesPerTask := 30
 	numberOfTasks := int(math.Ceil(float64(specs.Height) / float64(numberOfLinesPerTask)))
 
 	return &MandelbrotGenerator{
 		specs:specs,
+		imageData:imageData,
 		numberOfTasks:numberOfTasks,
 		numberOfLinesPerTask:numberOfLinesPerTask}
 }
@@ -58,13 +61,12 @@ func (g MandelbrotGenerator) CreateMandelbrot(sharpnessFactor int) *image.RGBA {
 	barrier.Add(g.numberOfTasks)
 
 	// Process tasks
-	imageData := image.NewRGBA(image.Rect(0, 0, g.specs.Width - 1, g.specs.Height - 1))
-	go g.calculateMandelbrot(taskChannel, imageData, barrier, sharpnessFactor)
+	go g.calculateMandelbrot(taskChannel, barrier, sharpnessFactor)
 
 	// Wait for all go routines to finish
 	barrier.Wait()
 
-	return imageData
+	return g.imageData
 }
 
 func (g MandelbrotGenerator) createTasks(taskChannel chan <- *Task, numberOfTasks int) {
@@ -79,7 +81,7 @@ func (g MandelbrotGenerator) createTasks(taskChannel chan <- *Task, numberOfTask
 	}
 }
 
-func (g MandelbrotGenerator) calculateMandelbrot(taskChannel <- chan *Task, imageData *image.RGBA, barrier *sync.WaitGroup, sharpnessFactor int) {
+func (g MandelbrotGenerator) calculateMandelbrot(taskChannel <- chan *Task, barrier *sync.WaitGroup, sharpnessFactor int) {
 	scaler := NewCoordinateScaler(g.specs)
 	calculator := NewMandelbrotCalculator(g.specs.MaximumNumberOfIterations)
 
@@ -106,7 +108,7 @@ func (g MandelbrotGenerator) calculateMandelbrot(taskChannel <- chan *Task, imag
 						for innerX := 0; innerX < sharpnessFactor; innerX++ {
 							index := ((y - task.startLineIndex + innerY) * width) + x + innerX
 							if index < numberOfPoints {
-								imageData.SetRGBA(x + innerX, y + innerY, valueColor)
+								g.imageData.SetRGBA(x + innerX, y + innerY, valueColor)
 							}
 						}
 					}

@@ -17,36 +17,35 @@ func main() {
 	http.Handle("/", http.FileServer(http.Dir("client")))
 	err := http.ListenAndServe(":8080", nil)
 	if err != nil {
-		panic("ListenAndServe: " + err.Error())
+		fmt.Printf("Failed to open socket on port 8080 with error. %s.\n", err.Error())
 	}
 }
 
 func mandelbrotHandler(ws *websocket.Conn) {
 	msg := make([]byte, 512)
 	if _, err := ws.Read(msg); err != nil {
-		panic(err)
+		fmt.Printf("Failed to read message with error: %s.\n", err.Error())
 	}
 
-	specs := specs.ReadFromString(string(msg))
+	//specs := specs.ReadFromString(string(msg))
+	specs := specs.ReadFromFile("data/mb0.spec")
 	generator := mandelbrot.NewMandelbrotGenerator(specs)
 
 	initialSharpnessFactor := 8
 
-	for i := 0; i < initialSharpnessFactor; i++ {
+	for i := initialSharpnessFactor; i > 0; i-- {
 		start := time.Now()
-		imageData := generator.CreateMandelbrot(initialSharpnessFactor - i)
-		fmt.Printf("Took %s to create mandelbrot set.", time.Since(start))
+		imageData := generator.CreateMandelbrot(i)
+		fmt.Printf("Took %s to create mandelbrot set.\n", time.Since(start))
 
 		buffer := new(bytes.Buffer)
 		if err := jpeg.Encode(buffer, imageData, nil); err != nil {
-			panic("unable to encode image.")
+			fmt.Printf("Failed to encode image with error: %s.\n", err.Error())
 		}
 
 		data := base64.StdEncoding.EncodeToString([]byte(buffer.Bytes()))
-
-		_, err := ws.Write([]byte(data))
-		if err != nil {
-			panic(err)
+		if _, err := ws.Write([]byte(data)); err != nil {
+			fmt.Printf("Failed to send message with error: %s.\n", err.Error())
 		}
 	}
 }
