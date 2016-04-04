@@ -93,9 +93,18 @@ func (g MandelbrotGenerator) calculateMandelbrot(taskChannel <- chan *Task, shar
 
 			width := g.specs.Width
 			numberOfPoints := task.numberOfLines * width
+			isInitialSharpnessFactor := sharpnessFactor == g.specs.InitialSharpnessFactor
+			previousSharpnessFactor := sharpnessFactor * 2
+			endLineIndex := task.startLineIndex + task.numberOfLines
 
-			for y := task.startLineIndex; y < task.startLineIndex + task.numberOfLines; y += sharpnessFactor {
+			for y := task.startLineIndex; y < endLineIndex; y += sharpnessFactor {
 				for x := 0; x < width; x += sharpnessFactor {
+					if !isInitialSharpnessFactor &&
+					x % previousSharpnessFactor < sharpnessFactor &&
+					y % previousSharpnessFactor < sharpnessFactor {
+						continue
+					}
+
 					real, imaginary := scaler.Scale(x, y)
 					value := calculator.FindValue(real, imaginary)
 
