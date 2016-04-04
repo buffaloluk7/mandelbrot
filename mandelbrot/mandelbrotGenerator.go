@@ -62,8 +62,8 @@ func (g MandelbrotGenerator) createTasks(taskChannel chan <- *Task, numberOfTask
 }
 
 func (g MandelbrotGenerator) calculateMandelbrot(taskChannel <- chan *Task, valuesChannel chan <- *[]MandelbrotValue, barrier *sync.WaitGroup) {
-	calculator := NewMandelbrotCalculator(g.specs.MaximumNumberOfIterations)
 	scaler := NewCoordinateScaler(g.specs.Minimum, g.specs.Maximum, g.specs.Width, g.specs.Height)
+	calculator := NewMandelbrotCalculator(g.specs.MaximumNumberOfIterations)
 
 	for {
 		task := <-taskChannel
