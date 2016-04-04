@@ -1,27 +1,86 @@
-var connection = new WebSocket('ws://localhost:8080/echo', []);
+var MandelbrotService = function(inputProvider){
+    if (!(this instanceof MandelbrotService )) return new MandelbrotService  ();
 
-// When the connection is open, send some data to the server
-connection.onopen = function () {
-  connection.send('Ping'); // Send the message 'Ping' to the server
-};
-
-// Log errors
-connection.onerror = function (error) {
-  console.log('WebSocket Error ' + error);
-};
-
-// Log messages from the server
-connection.onmessage = function (e) {
-    var image = document.getElementById('mandelbrot')
-    image.src = 'data:image/jpg;base64,' + e.data
-};
-
-function arrayBufferToBase64( buffer ) {
-    var binary = '';
-    var bytes = new Uint8Array( buffer );
-    var len = bytes.byteLength;
-    for (var i = 0; i < len; i++) {
-        binary += String.fromCharCode( bytes[ i ] );
+    this.GetMandelbrot = function(specs, callback){
+        var webSocket = new WebSocket('ws://localhost:8080/echo', []);
+        webSocket.onerror = function (error) {
+            console.log('WebSocket Error ' + error);
+        };
+        webSocket.onmessage = function (e) {
+            callback(e.data);
+        };
+        webSocket.onopen = function(e){
+            webSocket.send("ping");
+        }
     }
-    return window.btoa( binary );
-}
+};
+
+var specFactory = function (width, height, iterations, minR, minI, maxR, maxI) {
+        return {
+            width: width,
+            height: height,
+            iterations: iterations,
+            minR: minR,
+            minI: minI,
+            maxR: maxR,
+            maxI: maxI
+        }
+    }
+
+var MandelbrotSpecCalculationService = function(){
+    if (!(this instanceof MandelbrotSpecCalculationService)) return new MandelbrotSpecCalculationService();
+
+    this.Calculate = function(oldSpecs, x, y, percentage){
+
+        realRange = oldSpecs.maxR - oldSpecs.minR;
+        cReal = parseFloat(x) * (realRange / parseFloat(oldSpecs.width)) + oldSpecs.minR;
+        imaginaryRange = oldSpecs.maxI - oldSpecs.minI;
+        cImaginary = parseFloat(y) * (imaginaryRange / parseFloat(oldSpecs.height)) + oldSpecs.minI;
+
+        percentage = (percentage > 1) ? percentage / 100 : percentage;
+
+        var realOffset = realRange * percentage / 2;
+        var imaginaryOffset = imaginaryRange * percentage / 2;
+
+        var newIteration = (1 - oldSpecs.iterations) + 1;
+
+        return specFactory(oldSpecs.width, oldSpecs.height, newIteration,
+            oldSpecs.minR + realOffset, oldSpecs.minI + imaginaryOffset, oldSpecs.maxR - realOffset, oldSpecs.maxI - imaginaryOffset);
+    }
+
+
+};
+
+var InputViewModel = new function(mandelbrotService, mandelbrotSpecCalculationService){
+
+    getZoomInPercentage = function(){ return 90; }
+    getDefaultSpecs = function()
+    {
+        return{
+            width: 1000,
+            height: 750,
+            iterations: 100,
+            minR: -3,
+            minI: -1.5,
+            maxR: 1,
+            maxI: 1.5
+        }
+    }
+
+    var currentSpecs = getDefaultSpecs();
+    var mandelbrotContainer = document.getElementById("mandelbrot");
+
+    var ClickOnMandelbrot = function (event)
+    {
+        zoomedSpecs = mandelbrotSpecCalculationService.Calculate(currentSpecs, event.screenX, event.screenY, getZoomInPercentage());
+        mandelbrotService.GetMandelbrot(zoomedSpecs, function(imageData){
+            mandelbrotContainer.src  = "data:image/jpg;base64," + imageData;
+        });
+    };
+
+    this.Init = function(){
+        mandelbrotContainer = mandelbrotContainer;
+        mandelbrotContainer.onclick = ClickOnMandelbrot;
+    };
+
+}(new MandelbrotService(), new MandelbrotSpecCalculationService ());
