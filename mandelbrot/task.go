@@ -7,3 +7,7 @@ type Task struct {
 func NewTask(startLineIndex, numberOfLines int) *Task {
 	return &Task{startLineIndex:startLineIndex, numberOfLines:numberOfLines}
 }
+
+type Point struct {
+	x, y int
+}

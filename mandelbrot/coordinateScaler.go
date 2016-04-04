@@ -9,11 +9,8 @@ func NewCoordinateScaler(specs *Specs) *CoordinateScaler {
 }
 
 func (s CoordinateScaler) Scale(x, y int) (float64, float64) {
-	realRange := s.specs.MaxR - s.specs.MinR
-	cReal := float64(x) * (realRange / float64(s.specs.Width)) + s.specs.MinR
-
-	imaginaryRange := s.specs.MaxI - s.specs.MinI
-	cImaginary := float64(y) * (imaginaryRange / float64(s.specs.Height)) + s.specs.MinI
+	cReal := float64(x) * ((s.specs.MaxR - s.specs.MinR) / float64(s.specs.Width)) + s.specs.MinR
+	cImaginary := float64(y) * ((s.specs.MaxI - s.specs.MinI) / float64(s.specs.Height)) + s.specs.MinI
 
 	return cReal, cImaginary
 }

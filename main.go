@@ -7,11 +7,12 @@ import (
 	"image/jpeg"
 	"time"
 	"flag"
-"runtime/pprof"
+	"runtime/pprof"
 )
 
 var log = logging.MustGetLogger("main")
-var cpuprofile = flag.String("cpuprofile", "mandelbrot.prof", "write cpu profile to file")
+
+var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
 
 func main() {
 	// Setup logging
@@ -29,14 +30,16 @@ func main() {
 	specs := mandelbrot.ReadFromFile(os.Args[1])*/
 
 	flag.Parse()
-	f, err := os.Create(*cpuprofile)
-	if err != nil {
-		log.Fatal(err)
+	if *cpuprofile != "" {
+		f, err := os.Create(*cpuprofile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		pprof.StartCPUProfile(f)
+		defer pprof.StopCPUProfile()
 	}
-	pprof.StartCPUProfile(f)
-	defer pprof.StopCPUProfile()
 
-	specs := mandelbrot.ReadFromFile("data/mb1.spec")
+	specs := mandelbrot.ReadFromFile("data/mb0.spec")
 	generator := mandelbrot.NewMandelbrotGenerator(specs)
 
 	start := time.Now()
