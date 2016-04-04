@@ -25,7 +25,7 @@ func NewMandelbrotGenerator(specs *Specs) *MandelbrotGenerator {
 		numberOfLinesPerTask:numberOfLinesPerTask}
 }
 
-func (g MandelbrotGenerator) CreateMandelbrot() *image.RGBA {
+func (g MandelbrotGenerator) CreateMandelbrot(sharpnessFactor int) *image.RGBA {
 	// Create tasks
 	taskChannel := make(chan *Task)
 	go g.createTasks(taskChannel, g.numberOfTasks)
@@ -36,7 +36,7 @@ func (g MandelbrotGenerator) CreateMandelbrot() *image.RGBA {
 
 	// Process tasks
 	valuesChannel := make(chan *[]MandelbrotValue)
-	go g.calculateMandelbrot(taskChannel, valuesChannel, barrier)
+	go g.calculateMandelbrot(taskChannel, valuesChannel, barrier, sharpnessFactor)
 
 	// Merge task results
 	imageData := image.NewRGBA(image.Rect(0, 0, g.specs.Width - 1, g.specs.Height - 1))
@@ -61,7 +61,7 @@ func (g MandelbrotGenerator) createTasks(taskChannel chan <- *Task, numberOfTask
 	}
 }
 
-func (g MandelbrotGenerator) calculateMandelbrot(taskChannel <- chan *Task, valuesChannel chan <- *[]MandelbrotValue, barrier *sync.WaitGroup) {
+func (g MandelbrotGenerator) calculateMandelbrot(taskChannel <- chan *Task, valuesChannel chan <- *[]MandelbrotValue, barrier *sync.WaitGroup, sharpnessFactor int) {
 	scaler := NewCoordinateScaler(g.specs.Minimum, g.specs.Maximum, g.specs.Width, g.specs.Height)
 	calculator := NewMandelbrotCalculator(g.specs.MaximumNumberOfIterations)
 
@@ -69,23 +69,29 @@ func (g MandelbrotGenerator) calculateMandelbrot(taskChannel <- chan *Task, valu
 		task := <-taskChannel
 		log.Debugf("Start processing task with line index %d", task.startLineIndex)
 
-		go func(task *Task, width int, scaler *CoordinateScaler, calculator *MandelbrotCalculator, valuesChannel chan <- *[]MandelbrotValue, barrier *sync.WaitGroup) {
+		go func(task *Task, width, height int, scaler *CoordinateScaler, calculator *MandelbrotCalculator, valuesChannel chan <- *[]MandelbrotValue, barrier *sync.WaitGroup, sharpnessFactor int) {
 			defer barrier.Done()
 
 			values := make([]MandelbrotValue, task.numberOfLines * width)
 
-			for y := task.startLineIndex; y < task.startLineIndex + task.numberOfLines; y++ {
-				for x := 0; x < width; x++ {
+			for y := task.startLineIndex; y < task.startLineIndex + task.numberOfLines; y = y + sharpnessFactor {
+				for x := 0; x < width; x = x + sharpnessFactor {
 					complexNumber := scaler.Scale(x, y)
 					mandelbrotValue := (uint8)(calculator.FindValue(complexNumber))
 
-					index := (y - task.startLineIndex) * width + x
-					values[index] = *NewMandelbrotValue(mandelbrotValue, x, y)
+					for innerY := 0; innerY < sharpnessFactor; innerY++ {
+						for innerX := 0; innerX < sharpnessFactor; innerX++ {
+							index := ((y - task.startLineIndex + innerY) * width) + x + innerX
+							if index < len(values) {
+								values[index] = *NewMandelbrotValue(mandelbrotValue, x + innerX, y + innerY)
+							}
+						}
+					}
 				}
 			}
 
 			valuesChannel <- &values
-		}(task, g.specs.Width, scaler, calculator, valuesChannel, barrier)
+		}(task, g.specs.Width, g.specs.Height, scaler, calculator, valuesChannel, barrier, sharpnessFactor)
 	}
 }
 
