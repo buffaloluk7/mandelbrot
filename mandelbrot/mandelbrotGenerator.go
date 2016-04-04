@@ -38,7 +38,7 @@ var palette = func() Palette {
 	return palette
 }()
 
-func NewMandelbrotGenerator(specs *Specs) *MandelbrotGenerator {
+func NewMandelbrotGenerator(specs *specs.Specs) *MandelbrotGenerator {
 	numberOfLinesPerTask := 30
 	numberOfTasks := int(math.Ceil(float64(specs.Height) / float64(numberOfLinesPerTask)))
 
