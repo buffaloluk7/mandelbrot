@@ -9,8 +9,8 @@ import (
 )
 
 type MandelbrotGenerator struct {
-	specs *specs.Specs
-	imageData *image.RGBA
+	specs                               *specs.Specs
+	imageData                           *image.RGBA
 	numberOfTasks, numberOfLinesPerTask int
 }
 
@@ -61,7 +61,7 @@ func (g MandelbrotGenerator) CreateMandelbrot(sharpnessFactor int) *image.RGBA {
 	barrier.Add(g.numberOfTasks)
 
 	// Process tasks
-	go g.calculateMandelbrot(taskChannel, barrier, sharpnessFactor)
+	go g.calculateMandelbrot(taskChannel, sharpnessFactor, barrier)
 
 	// Wait for all go routines to finish
 	barrier.Wait()
@@ -81,7 +81,7 @@ func (g MandelbrotGenerator) createTasks(taskChannel chan <- *Task, numberOfTask
 	}
 }
 
-func (g MandelbrotGenerator) calculateMandelbrot(taskChannel <- chan *Task, barrier *sync.WaitGroup, sharpnessFactor int) {
+func (g MandelbrotGenerator) calculateMandelbrot(taskChannel <- chan *Task, sharpnessFactor int, barrier *sync.WaitGroup) {
 	scaler := NewCoordinateScaler(g.specs)
 	calculator := NewMandelbrotCalculator(g.specs.MaximumNumberOfIterations)
 
@@ -94,8 +94,8 @@ func (g MandelbrotGenerator) calculateMandelbrot(taskChannel <- chan *Task, barr
 			width := g.specs.Width
 			numberOfPoints := task.numberOfLines * width
 
-			for y := task.startLineIndex; y < task.startLineIndex + task.numberOfLines; y = y + sharpnessFactor {
-				for x := 0; x < width; x = x + sharpnessFactor {
+			for y := task.startLineIndex; y < task.startLineIndex + task.numberOfLines; y += sharpnessFactor {
+				for x := 0; x < width; x += sharpnessFactor {
 					real, imaginary := scaler.Scale(x, y)
 					value := calculator.FindValue(real, imaginary)
 
