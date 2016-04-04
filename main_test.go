@@ -22,7 +22,7 @@ func TestMandelbrotPerformance(t *testing.T) {
 
 	for i := 0; i < numberOfIterations; i++ {
 		start := time.Now()
-		generator.CreateMandelbrot()
+		generator.CreateMandelbrot(1)
 		log.Infof("#%d: Took %s to create mandelbrot set.", i + 1, time.Since(start))
 	}
 }
@@ -46,7 +46,7 @@ func TestMandelbrotPerformanceParallel(t *testing.T) {
 			defer barrier.Done()
 
 			start := time.Now()
-			generator.CreateMandelbrot()
+			generator.CreateMandelbrot(1)
 			log.Infof("#%d: Took %s to create mandelbrot set.", i + 1, time.Since(start))
 		}(i, barrier)
 	}
