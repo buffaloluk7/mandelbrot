@@ -6,12 +6,13 @@ import (
 	"os"
 	"image/jpeg"
 	"time"
-	"flag"
-"runtime/pprof"
+	"golang.org/x/net/websocket"
+	"net/http"
+	"bytes"
+	"encoding/base64"
 )
 
 var log = logging.MustGetLogger("main")
-var cpuprofile = flag.String("cpuprofile", "mandelbrot.prof", "write cpu profile to file")
 
 func main() {
 	// Setup logging
@@ -28,28 +29,39 @@ func main() {
 
 	specs := mandelbrot.ReadFromFile(os.Args[1])*/
 
-	flag.Parse()
-	f, err := os.Create(*cpuprofile)
+	http.Handle("/echo", websocket.Handler(echoHandler))
+	http.Handle("/", http.FileServer(http.Dir("client")))
+	err := http.ListenAndServe(":8080", nil)
 	if err != nil {
+		panic("ListenAndServe: " + err.Error())
+	}
+}
+
+func echoHandler(ws *websocket.Conn) {
+	msg := make([]byte, 512)
+	if _, err := ws.Read(msg); err != nil {
 		log.Fatal(err)
 	}
-	pprof.StartCPUProfile(f)
-	defer pprof.StopCPUProfile()
 
-	specs := mandelbrot.ReadFromFile("data/mb1.spec")
+	specs := mandelbrot.ReadFromFile("data/mb0.spec")
 	generator := mandelbrot.NewMandelbrotGenerator(specs)
 
-	start := time.Now()
-	imageData := generator.CreateMandelbrot()
-	log.Infof("Took %s to create mandelbrot set.", time.Since(start))
+	for i := 0; i < 8; i++ {
+		start := time.Now()
+		imageData := generator.CreateMandelbrot(8 - i)
+		log.Infof("Took %s to create mandelbrot set.", time.Since(start))
 
-	file, err := os.Create("output.jpg")
-	if err != nil {
-		log.Panic(err)
-	}
-	defer file.Close()
+		buffer := new(bytes.Buffer)
+		if err := jpeg.Encode(buffer, imageData, nil); err != nil {
+			log.Debug("unable to encode image.")
+		}
 
-	if err := jpeg.Encode(file, imageData, &jpeg.Options{jpeg.DefaultQuality}); err != nil {
-		log.Panic("Unable to encode image.")
+		data := base64.StdEncoding.EncodeToString([]byte(buffer.Bytes()))
+
+		m, err := ws.Write([]byte(data))
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.Debug("Send: %d", m)
 	}
 }

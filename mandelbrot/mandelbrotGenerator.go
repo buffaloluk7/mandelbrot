@@ -22,7 +22,7 @@ func NewMandelbrotGenerator(specs *Specs) *MandelbrotGenerator {
 		numberOfLinesPerTask:numberOfLinesPerTask}
 }
 
-func (g MandelbrotGenerator) CreateMandelbrot() *image.RGBA {
+func (g MandelbrotGenerator) CreateMandelbrot(sharpnessFactor int) *image.RGBA {
 	// Create tasks
 	taskChannel := make(chan *Task)
 	go g.createTasks(taskChannel, g.numberOfTasks)
@@ -33,7 +33,7 @@ func (g MandelbrotGenerator) CreateMandelbrot() *image.RGBA {
 
 	// Process tasks
 	valuesChannel := make(chan *[]MandelbrotValue)
-	go g.calculateMandelbrot(taskChannel, valuesChannel, barrier)
+	go g.calculateMandelbrot(taskChannel, valuesChannel, barrier, sharpnessFactor)
 
 	// Merge task results
 	imageData := image.NewRGBA(image.Rect(0, 0, g.specs.Width - 1, g.specs.Height - 1))
@@ -64,23 +64,29 @@ func (g MandelbrotGenerator) calculateMandelbrot(taskChannel <- chan *Task, valu
 	for {
 		task := <-taskChannel
 
-		go func(task *Task, width int, scaler *CoordinateScaler, calculator *MandelbrotCalculator, valuesChannel chan <- *[]MandelbrotValue, barrier *sync.WaitGroup) {
+		go func(task *Task, width, height int, scaler *CoordinateScaler, calculator *MandelbrotCalculator, valuesChannel chan <- *[]MandelbrotValue, barrier *sync.WaitGroup, sharpnessFactor int) {
 			defer barrier.Done()
 
 			values := make([]MandelbrotValue, task.numberOfLines * width)
 
-			for y := task.startLineIndex; y < task.startLineIndex + task.numberOfLines; y++ {
-				for x := 0; x < width; x++ {
+			for y := task.startLineIndex; y < task.startLineIndex + task.numberOfLines; y = y + sharpnessFactor {
+				for x := 0; x < width; x = x + sharpnessFactor {
 					r, i := scaler.Scale(x, y)
 					mandelbrotValue := (uint8)(calculator.FindValue(r, i))
 
-					index := (y - task.startLineIndex) * width + x
-					values[index] = *NewMandelbrotValue(mandelbrotValue, x, y)
+					for innerY := 0; innerY < sharpnessFactor; innerY++ {
+						for innerX := 0; innerX < sharpnessFactor; innerX++ {
+							index := ((y - task.startLineIndex + innerY) * width) + x + innerX
+							if index < len(values) {
+								values[index] = *NewMandelbrotValue(mandelbrotValue, x + innerX, y + innerY)
+							}
+						}
+					}
 				}
 			}
 
 			valuesChannel <- &values
-		}(task, g.specs.Width, scaler, calculator, valuesChannel, barrier)
+		}(task, g.specs.Width, g.specs.Height, scaler, calculator, valuesChannel, barrier, sharpnessFactor)
 	}
 }
 
