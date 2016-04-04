@@ -7,6 +7,8 @@ import (
 	"os"
 	"github.com/op/go-logging"
 	"sync"
+	"github.com/buffaloluk7/mandelbrot/specs"
+	"fmt"
 )
 
 func TestMandelbrotPerformance(t *testing.T) {
@@ -15,7 +17,7 @@ func TestMandelbrotPerformance(t *testing.T) {
 	backendLeveled.SetLevel(logging.INFO, "")
 	logging.SetBackend(backendLeveled)
 
-	specs := mandelbrot.ReadFromFile("data/mb0.spec")
+	specs := specs.ReadFromFile("data/mb0.spec")
 	generator := mandelbrot.NewMandelbrotGenerator(specs)
 
 	numberOfIterations := 10
@@ -23,7 +25,7 @@ func TestMandelbrotPerformance(t *testing.T) {
 	for i := 0; i < numberOfIterations; i++ {
 		start := time.Now()
 		generator.CreateMandelbrot(1)
-		log.Infof("#%d: Took %s to create mandelbrot set.", i + 1, time.Since(start))
+		fmt.Printf("#%d: Took %s to create mandelbrot set.\n", i + 1, time.Since(start))
 	}
 }
 
@@ -33,7 +35,7 @@ func TestMandelbrotPerformanceParallel(t *testing.T) {
 	backendLeveled.SetLevel(logging.INFO, "")
 	logging.SetBackend(backendLeveled)
 
-	specs := mandelbrot.ReadFromFile("data/mb0.spec")
+	specs := specs.ReadFromFile("data/mb0.spec")
 	generator := mandelbrot.NewMandelbrotGenerator(specs)
 
 	numberOfIterations := 10
@@ -47,7 +49,7 @@ func TestMandelbrotPerformanceParallel(t *testing.T) {
 
 			start := time.Now()
 			generator.CreateMandelbrot(1)
-			log.Infof("#%d: Took %s to create mandelbrot set.", i + 1, time.Since(start))
+			fmt.Printf("#%d: Took %s to create mandelbrot set.\n", i + 1, time.Since(start))
 		}(i, barrier)
 	}
 
