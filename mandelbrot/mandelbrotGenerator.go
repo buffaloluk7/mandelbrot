@@ -9,9 +9,8 @@ import (
 )
 
 type MandelbrotGenerator struct {
-	specs                               *specs.Specs
-	imageData                           *image.RGBA
-	numberOfTasks, numberOfLinesPerTask int
+	specs         *specs.Specs
+	imageData     *image.RGBA
 }
 
 type Palette []color.RGBA
@@ -41,24 +40,30 @@ var palette = func() Palette {
 
 func NewMandelbrotGenerator(specs *specs.Specs) *MandelbrotGenerator {
 	imageData := image.NewRGBA(image.Rect(0, 0, specs.Width - 1, specs.Height - 1))
-	numberOfLinesPerTask := 30
-	numberOfTasks := int(math.Ceil(float64(specs.Height) / float64(numberOfLinesPerTask)))
 
 	return &MandelbrotGenerator{
 		specs:specs,
-		imageData:imageData,
-		numberOfTasks:numberOfTasks,
-		numberOfLinesPerTask:numberOfLinesPerTask}
+		imageData:imageData}
 }
 
 func (g MandelbrotGenerator) CreateMandelbrot(sharpnessFactor int) *image.RGBA {
+	// Calculate number of tasks
+	numberOfTasks := int(math.Ceil(float64(g.specs.Height) / float64(g.specs.NumberOfLinesPerTask)))
+	// Adjust number of tasks depending on sharpnessFactor (all lines inside the sharpnessFactor becomes a single line)
+	// e.g. sharpnessFactor = 4, height = 15, numberOfLinesPerTask = 2 --> 2 Tasks
+	// e.g. sharpnessFactor = 2, height = 15, numberOfLinesPerTask = 2 --> 4 Tasks
+	// e.g. sharpnessFactor = 1, height = 15, numberOfLinesPerTask = 2 --> 8 Tasks
+	if sharpnessFactor > 1 {
+		numberOfTasks = int(math.Ceil(float64(numberOfTasks) / float64(sharpnessFactor)))
+	}
+
 	// Create tasks
 	taskChannel := make(chan *Task)
-	go g.createTasks(taskChannel, g.numberOfTasks)
+	go g.createTasks(taskChannel, numberOfTasks, sharpnessFactor)
 
 	// Setup barrier (for calculation and processing go routines)
 	barrier := &sync.WaitGroup{}
-	barrier.Add(g.numberOfTasks)
+	barrier.Add(numberOfTasks)
 
 	// Process tasks
 	go g.calculateMandelbrot(taskChannel, sharpnessFactor, barrier)
@@ -69,12 +74,15 @@ func (g MandelbrotGenerator) CreateMandelbrot(sharpnessFactor int) *image.RGBA {
 	return g.imageData
 }
 
-func (g MandelbrotGenerator) createTasks(taskChannel chan <- *Task, numberOfTasks int) {
+func (g MandelbrotGenerator) createTasks(taskChannel chan <- *Task, numberOfTasks, sharpnessFactor int) {
+	numberOfLines := g.specs.NumberOfLinesPerTask * sharpnessFactor
+
 	for i := 0; i < numberOfTasks; i++ {
-		startLineIndex := i * g.numberOfLinesPerTask
-		numberOfLines := g.numberOfLinesPerTask
-		if i == numberOfTasks - 1 && g.specs.Height % g.numberOfLinesPerTask != 0 {
-			numberOfLines = g.specs.Height % g.numberOfLinesPerTask
+		startLineIndex := i * numberOfLines
+
+		// Adjust number of lines for last task
+		if i == numberOfTasks - 1 && g.specs.Height % numberOfLines != 0 {
+			numberOfLines = g.specs.Height % numberOfLines
 		}
 
 		taskChannel <- NewTask(startLineIndex, numberOfLines)
@@ -85,19 +93,19 @@ func (g MandelbrotGenerator) calculateMandelbrot(taskChannel <- chan *Task, shar
 	scaler := NewCoordinateScaler(g.specs)
 	calculator := NewMandelbrotCalculator(g.specs.MaximumNumberOfIterations)
 
+	width := g.specs.Width
+	imageSize := g.specs.Height * width
+
 	for {
 		task := <-taskChannel
 
 		go func() {
 			defer barrier.Done()
 
-			width := g.specs.Width
-			numberOfPoints := task.numberOfLines * width
 			isInitialSharpnessFactor := sharpnessFactor == g.specs.InitialSharpnessFactor
 			previousSharpnessFactor := sharpnessFactor * 2
-			endLineIndex := task.startLineIndex + task.numberOfLines
 
-			for y := task.startLineIndex; y < endLineIndex; y += sharpnessFactor {
+			for y := task.startLineIndex; y < task.startLineIndex + task.numberOfLines; y += sharpnessFactor {
 				for x := 0; x < width; x += sharpnessFactor {
 					if !isInitialSharpnessFactor &&
 					x % previousSharpnessFactor < sharpnessFactor &&
@@ -115,8 +123,8 @@ func (g MandelbrotGenerator) calculateMandelbrot(taskChannel <- chan *Task, shar
 
 					for innerY := 0; innerY < sharpnessFactor; innerY++ {
 						for innerX := 0; innerX < sharpnessFactor; innerX++ {
-							index := ((y - task.startLineIndex + innerY) * width) + x + innerX
-							if index < numberOfPoints {
+							index := (y + innerY) * width + x + innerX
+							if index < imageSize {
 								g.imageData.SetRGBA(x + innerX, y + innerY, valueColor)
 							}
 						}
