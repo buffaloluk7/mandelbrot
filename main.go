@@ -27,8 +27,8 @@ func mandelbrotHandler(ws *websocket.Conn) {
 		fmt.Printf("Failed to read message with error: %s.\n", err.Error())
 	}
 
-	//specs := specs.ReadFromString(string(msg))
-	specs := specs.ReadFromFile("data/mb0.spec")
+	specs := specs.ReadFromString(string(msg))
+	//specs := specs.ReadFromFile("data/mb0.spec")
 	generator := mandelbrot.NewMandelbrotGenerator(specs)
 
 	for sharpnessFactor := specs.InitialSharpnessFactor; sharpnessFactor > 0; sharpnessFactor /= 2 {

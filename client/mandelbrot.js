@@ -17,7 +17,7 @@ var MandelbrotService = function(inputProvider){
     }
 
     generateRequestArgument = function(specs){
-        var nl = function(value) { return value + "\\n" };
+        var nl = function(value) { return value + ";" };
         return nl(specs.width) + nl(specs.height) + nl(specs.minR) + nl(specs.minI) + nl(specs.maxR) + nl(specs.maxI) + nl(specs.iterations);
     }
 };
