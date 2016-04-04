@@ -9,9 +9,7 @@ func NewMandelbrotCalculator(maximumNumberOfIterations int) *MandelbrotCalculato
 }
 
 func (m MandelbrotCalculator) FindValue(real, imaginary float64) int {
-	i := 0
-	
-	nextI, nextR := imaginary, real
+	i, nextI, nextR := 0, imaginary, real
 
 	for ; i < m.maximumNumberOfIterations && !(nextR * nextR + nextI * nextI >= 4.0); i++ {
 		real := nextR * nextR - nextI * nextI + real
