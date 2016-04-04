@@ -2,66 +2,52 @@ package main
 
 import (
 	"github.com/buffaloluk7/mandelbrot/mandelbrot"
-	"github.com/op/go-logging"
-	"os"
+	"github.com/buffaloluk7/mandelbrot/specs"
 	"image/jpeg"
 	"time"
 	"golang.org/x/net/websocket"
 	"net/http"
 	"bytes"
 	"encoding/base64"
+	"fmt"
 )
 
-var log = logging.MustGetLogger("main")
-
 func main() {
-	// Setup logging
-	var backend = logging.NewLogBackend(os.Stdout, "", 0)
-	var backendLeveled = logging.AddModuleLevel(backend)
-	backendLeveled.SetLevel(logging.INFO, "")
-	logging.SetBackend(backendLeveled)
-
-	// Parse console arguments
-	/*if len(os.Args) != 2 {
-		log.Panic("Invalid number of arguments. Expected: 1")
-		return
-	}
-
-	specs := mandelbrot.ReadFromFile(os.Args[1])*/
-
-	http.Handle("/echo", websocket.Handler(echoHandler))
+	http.Handle("/mandelbrot", websocket.Handler(mandelbrotHandler))
 	http.Handle("/", http.FileServer(http.Dir("client")))
 	err := http.ListenAndServe(":8080", nil)
 	if err != nil {
-		panic("ListenAndServe: " + err.Error())
+		fmt.Printf("Failed to open socket on port 8080 with error. %s.\n", err.Error())
 	}
 }
 
-func echoHandler(ws *websocket.Conn) {
+func mandelbrotHandler(ws *websocket.Conn) {
 	msg := make([]byte, 512)
 	if _, err := ws.Read(msg); err != nil {
-		log.Fatal(err)
+		fmt.Printf("Failed to read message with error: %s.\n", err.Error())
 	}
 
-	specs := mandelbrot.ReadFromFile("data/mb0.spec")
+	//specs := specs.ReadFromString(string(msg))
+	specs := specs.ReadFromFile("data/mb0.spec")
 	generator := mandelbrot.NewMandelbrotGenerator(specs)
 
-	for i := 0; i < 8; i++ {
-		start := time.Now()
-		imageData := generator.CreateMandelbrot(8 - i)
-		log.Infof("Took %s to create mandelbrot set.", time.Since(start))
+	for sharpnessFactor := specs.InitialSharpnessFactor; sharpnessFactor > 0; sharpnessFactor /= 2 {
+		calculateMandelbrot(ws, generator, sharpnessFactor)
+	}
+}
 
-		buffer := new(bytes.Buffer)
-		if err := jpeg.Encode(buffer, imageData, nil); err != nil {
-			log.Debug("unable to encode image.")
-		}
+func calculateMandelbrot(ws *websocket.Conn, generator *mandelbrot.MandelbrotGenerator, sharpnessFactor int) {
+	start := time.Now()
+	imageData := generator.CreateMandelbrot(sharpnessFactor)
+	fmt.Printf("Took %s to create mandelbrot set with sharpness factor %d.\n", time.Since(start), sharpnessFactor)
 
-		data := base64.StdEncoding.EncodeToString([]byte(buffer.Bytes()))
+	buffer := new(bytes.Buffer)
+	if err := jpeg.Encode(buffer, imageData, nil); err != nil {
+		fmt.Printf("Failed to encode image with error: %s.\n", err.Error())
+	}
 
-		m, err := ws.Write([]byte(data))
-		if err != nil {
-			log.Fatal(err)
-		}
-		log.Debug("Send: %d", m)
+	data := base64.StdEncoding.EncodeToString([]byte(buffer.Bytes()))
+	if _, err := ws.Write([]byte(data)); err != nil {
+		fmt.Printf("Failed to send message with error: %s.\n", err.Error())
 	}
 }

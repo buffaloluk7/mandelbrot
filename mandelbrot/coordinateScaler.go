@@ -1,10 +1,12 @@
 package mandelbrot
 
+import "github.com/buffaloluk7/mandelbrot/specs"
+
 type CoordinateScaler struct {
-	specs *Specs
+	specs *specs.Specs
 }
 
-func NewCoordinateScaler(specs *Specs) *CoordinateScaler {
+func NewCoordinateScaler(specs *specs.Specs) *CoordinateScaler {
 	return &CoordinateScaler{specs}
 }
 
