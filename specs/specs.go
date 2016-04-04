@@ -1,4 +1,4 @@
-package mandelbrot
+package specs
 
 import (
 	"os"
