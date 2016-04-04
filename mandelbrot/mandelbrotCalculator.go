@@ -8,23 +8,17 @@ func NewMandelbrotCalculator(maximumNumberOfIterations int) *MandelbrotCalculato
 	return &MandelbrotCalculator{maximumNumberOfIterations:maximumNumberOfIterations}
 }
 
-func (m MandelbrotCalculator) FindValue(complexNumber *ComplexNumber) int {
+func (m MandelbrotCalculator) FindValue(real, imaginary float64) int {
 	i := 0
-	cNext := NewComplexNumber(0, 0)
+	
+	nextI, nextR := imaginary, real
 
-	for ; i < m.maximumNumberOfIterations && !doesEscape(cNext); i++ {
-		real := cNext.real * cNext.real - cNext.imaginary * cNext.imaginary + complexNumber.real
-		imaginary := 2.0 * cNext.real * cNext.imaginary + complexNumber.imaginary
+	for ; i < m.maximumNumberOfIterations && !(nextR * nextR + nextI * nextI >= 4.0); i++ {
+		real := nextR * nextR - nextI * nextI + real
+		imaginary := 2.0 * nextR * nextI + imaginary
 
-		cNext = NewComplexNumber(real, imaginary)
+		nextI, nextR = imaginary, real
 	}
 
 	return i
-}
-
-func doesEscape(complexNumber *ComplexNumber) bool {
-	realPart := complexNumber.real
-	imaginaryPart := complexNumber.imaginary
-
-	return realPart * realPart + imaginaryPart * imaginaryPart >= 4.0
 }

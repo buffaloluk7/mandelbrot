@@ -4,11 +4,8 @@ import (
 	"image"
 	"image/color"
 	"math"
-	"github.com/op/go-logging"
 	"sync"
 )
-
-var log = logging.MustGetLogger("mandelbrotGenerator")
 
 type MandelbrotGenerator struct {
 	specs *Specs
@@ -56,18 +53,16 @@ func (g MandelbrotGenerator) createTasks(taskChannel chan <- *Task, numberOfTask
 			numberOfLines = g.specs.Height % g.numberOfLinesPerTask
 		}
 
-		log.Debugf("Create new task with start line index %d and %d lines to process", startLineIndex, numberOfLines)
 		taskChannel <- NewTask(startLineIndex, numberOfLines)
 	}
 }
 
 func (g MandelbrotGenerator) calculateMandelbrot(taskChannel <- chan *Task, valuesChannel chan <- *[]MandelbrotValue, barrier *sync.WaitGroup) {
-	scaler := NewCoordinateScaler(g.specs.Minimum, g.specs.Maximum, g.specs.Width, g.specs.Height)
+	scaler := NewCoordinateScaler(g.specs)
 	calculator := NewMandelbrotCalculator(g.specs.MaximumNumberOfIterations)
 
 	for {
 		task := <-taskChannel
-		log.Debugf("Start processing task with line index %d", task.startLineIndex)
 
 		go func(task *Task, width int, scaler *CoordinateScaler, calculator *MandelbrotCalculator, valuesChannel chan <- *[]MandelbrotValue, barrier *sync.WaitGroup) {
 			defer barrier.Done()
@@ -76,8 +71,8 @@ func (g MandelbrotGenerator) calculateMandelbrot(taskChannel <- chan *Task, valu
 
 			for y := task.startLineIndex; y < task.startLineIndex + task.numberOfLines; y++ {
 				for x := 0; x < width; x++ {
-					complexNumber := scaler.Scale(x, y)
-					mandelbrotValue := (uint8)(calculator.FindValue(complexNumber))
+					r, i := scaler.Scale(x, y)
+					mandelbrotValue := (uint8)(calculator.FindValue(r, i))
 
 					index := (y - task.startLineIndex) * width + x
 					values[index] = *NewMandelbrotValue(mandelbrotValue, x, y)
@@ -92,7 +87,6 @@ func (g MandelbrotGenerator) calculateMandelbrot(taskChannel <- chan *Task, valu
 func (g MandelbrotGenerator) processResults(imageData *image.RGBA, valuesChannel <- chan *[]MandelbrotValue, barrier *sync.WaitGroup) {
 	for {
 		values := <-valuesChannel
-		log.Debug("Add calculated mandelbrot values to image")
 
 		go func(values *[]MandelbrotValue, imageData *image.RGBA, barrier *sync.WaitGroup) {
 			defer barrier.Done()
