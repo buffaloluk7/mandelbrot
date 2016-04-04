@@ -1,9 +1,11 @@
-package mandelbrot
+package specs
 
 import (
 	"os"
 	"bufio"
 	"strconv"
+	"io"
+	"strings"
 )
 
 type Specs struct {
@@ -23,6 +25,12 @@ func NewSpecs(width, height int, minR, minI, maxR, maxI float64, maximumNumberOf
 		MaximumNumberOfIterations:maximumNumberOfIterations}
 }
 
+func ReadFromString(specs string) *Specs {
+	r := strings.NewReader(specs)
+
+	return fromReader(r)
+}
+
 func ReadFromFile(filePath string) *Specs {
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -30,7 +38,11 @@ func ReadFromFile(filePath string) *Specs {
 	}
 	defer file.Close()
 
-	scanner := bufio.NewScanner(file)
+	return fromReader(file)
+}
+
+func fromReader(r io.Reader) *Specs{
+	scanner := bufio.NewScanner(r)
 	arguments := make([]string, 7)
 	for i := 0; i < 7 && scanner.Scan(); i++ {
 		arguments[i] = scanner.Text()
