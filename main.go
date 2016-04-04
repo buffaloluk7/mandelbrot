@@ -28,15 +28,15 @@ func mandelbrotHandler(ws *websocket.Conn) {
 	}
 
 	specs := specs.ReadFromString(string(msg))
-	//specs := specs.ReadFromFile("data/mb0.spec")
 	generator := mandelbrot.NewMandelbrotGenerator(specs)
+	imageSize := specs.Height * specs.Width
 
 	for sharpnessFactor := specs.InitialSharpnessFactor; sharpnessFactor > 0; sharpnessFactor /= 2 {
-		calculateMandelbrot(ws, generator, sharpnessFactor)
+		calculateMandelbrot(ws, generator, sharpnessFactor, imageSize)
 	}
 }
 
-func calculateMandelbrot(ws *websocket.Conn, generator *mandelbrot.MandelbrotGenerator, sharpnessFactor int) {
+func calculateMandelbrot(ws *websocket.Conn, generator *mandelbrot.MandelbrotGenerator, sharpnessFactor, imageSize int) {
 	start := time.Now()
 	imageData := generator.CreateMandelbrot(sharpnessFactor)
 	fmt.Printf("Took %s to create mandelbrot set with sharpness factor %d.\n", time.Since(start), sharpnessFactor)
@@ -46,8 +46,10 @@ func calculateMandelbrot(ws *websocket.Conn, generator *mandelbrot.MandelbrotGen
 		fmt.Printf("Failed to encode image with error: %s.\n", err.Error())
 	}
 
-	data := base64.StdEncoding.EncodeToString([]byte(buffer.Bytes()))
-	if _, err := ws.Write([]byte(data)); err != nil {
+	output := make([]byte, imageSize)
+	base64.StdEncoding.Encode(output, buffer.Bytes())
+
+	if _, err := ws.Write(output); err != nil {
 		fmt.Printf("Failed to send message with error: %s.\n", err.Error())
 	}
 }
