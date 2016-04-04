@@ -43,7 +43,7 @@ func echoHandler(ws *websocket.Conn) {
 		log.Fatal(err)
 	}
 
-	specs := mandelbrot.ReadFromFile("data/mb0.spec")
+	specs := mandelbrot.ReadFromString(string(msg))
 	generator := mandelbrot.NewMandelbrotGenerator(specs)
 
 	initialSharpnessFactor := 8
