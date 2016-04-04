@@ -9,7 +9,7 @@ import (
 )
 
 type Specs struct {
-	Width, Height, MaximumNumberOfIterations int
+	Width, Height, MaximumNumberOfIterations, InitialSharpnessFactor int
 	MinR, MinI float64
 	MaxR, MaxI float64
 }
@@ -22,6 +22,7 @@ func NewSpecs(width, height int, minR, minI, maxR, maxI float64, maximumNumberOf
 		MinI:minI,
 		MaxR:maxR,
 		MaxI:maxI,
+		InitialSharpnessFactor:8,
 		MaximumNumberOfIterations:maximumNumberOfIterations}
 }
 

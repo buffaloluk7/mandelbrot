@@ -31,9 +31,7 @@ func mandelbrotHandler(ws *websocket.Conn) {
 	specs := specs.ReadFromFile("data/mb0.spec")
 	generator := mandelbrot.NewMandelbrotGenerator(specs)
 
-	initialSharpnessFactor := 8
-
-	for i := initialSharpnessFactor; i > 0; i-- {
+	for i := specs.InitialSharpnessFactor; i > 0; i-- {
 		start := time.Now()
 		imageData := generator.CreateMandelbrot(i)
 		fmt.Printf("Took %s to create mandelbrot set.\n", time.Since(start))
