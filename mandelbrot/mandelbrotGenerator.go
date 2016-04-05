@@ -48,20 +48,17 @@ func NewMandelbrotGenerator(specs *specs.Specs) *MandelbrotGenerator {
 
 func (g MandelbrotGenerator) CreateMandelbrot(sharpnessFactor int) *image.RGBA {
 	// Calculate number of tasks
-	numberOfTasks := int(math.Ceil(float64(g.specs.Height) / float64(g.specs.NumberOfLinesPerTask)))
 	// Adjust number of tasks depending on sharpnessFactor (all lines inside the sharpnessFactor becomes a single line)
 	// e.g. sharpnessFactor = 4, height = 15, numberOfLinesPerTask = 2 --> 2 Tasks
 	// e.g. sharpnessFactor = 2, height = 15, numberOfLinesPerTask = 2 --> 4 Tasks
 	// e.g. sharpnessFactor = 1, height = 15, numberOfLinesPerTask = 2 --> 8 Tasks
-	if sharpnessFactor > 1 {
-		numberOfTasks = int(math.Ceil(float64(numberOfTasks) / float64(sharpnessFactor)))
-	}
+	numberOfTasks := int(math.Ceil(float64(g.specs.Height) / float64(g.specs.NumberOfLinesPerTask) / float64(sharpnessFactor)))
 
 	// Create tasks
 	taskChannel := make(chan *Task)
 	go g.createTasks(taskChannel, numberOfTasks, sharpnessFactor)
 
-	// Setup barrier (for calculation and processing go routines)
+	// Setup barrier to wait for all tasks to finish before returning calculated image
 	barrier := &sync.WaitGroup{}
 	barrier.Add(numberOfTasks)
 
