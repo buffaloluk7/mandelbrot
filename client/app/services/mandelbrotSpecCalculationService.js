@@ -1,5 +1,3 @@
-
-
 var mandelbrotSpecCalculationService = function(){
 
     var specFactory = function(){
