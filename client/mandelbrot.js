@@ -1,9 +1,8 @@
-var MandelbrotService = function(){
-    if (!(this instanceof MandelbrotService )) return new MandelbrotService  ();
+var mandelbrotService = function(){
 
     var webSocket = null;
 
-    this.OpenWebSocket = function(initialSpecs, callback){
+    var openWebSocket = function(initialSpecs, callback){
         webSocket = new WebSocket('ws://localhost:8080/mandelbrot', []);
 
         webSocket.onerror = function (error) {
@@ -13,7 +12,7 @@ var MandelbrotService = function(){
             callback(e.data);
         };
         webSocket.onopen = function(e){
-            var webSocketArguments = generateRequestArgument(initialSpecs);
+            var webSocketArguments = _generateRequestArgument(initialSpecs);
             console.log(webSocketArguments);
             webSocket.send(webSocketArguments);
         }
@@ -22,18 +21,24 @@ var MandelbrotService = function(){
         }
     }
 
-    this.GetMandelbrot = function(specs) {
+    var getMandelbrot = function(specs) {
         if(webSocket == null) return;
-        webSocket.send(generateRequestArgument(specs));
+        webSocket.send(_generateRequestArgument(specs));
     }
 
-    generateRequestArgument = function(specs){
+    var _generateRequestArgument = function(specs){
         var nl = function(value) { return value + ";" };
         return nl(specs.width) + nl(specs.height) + nl(specs.minR) + nl(specs.minI) + nl(specs.maxR) + nl(specs.maxI) + nl(specs.iterations);
-    }
-};
+    };
 
-var specFactory = function (width, height, iterations, minR, minI, maxR, maxI) {
+    return {
+        getMandelbrot: getMandelbrot,
+        openWebSocket: openWebSocket
+    };
+}();
+
+var specFactory = function(){
+    var create = function (width, height, iterations, minR, minI, maxR, maxI) {
         return {
             width: width,
             height: height,
@@ -45,10 +50,14 @@ var specFactory = function (width, height, iterations, minR, minI, maxR, maxI) {
         }
     }
 
-var MandelbrotSpecCalculationService = function(){
-    if (!(this instanceof MandelbrotSpecCalculationService)) return new MandelbrotSpecCalculationService();
+    return {
+        create: create
+    }
+}();
 
-    this.Calculate = function(oldSpecs, x, y, percentage){
+var mandelbrotSpecCalculationService = function(specFactory){
+
+    var calculate = function(oldSpecs, x, y, percentage){
 
         realRange = oldSpecs.maxR - oldSpecs.minR;
         cReal = parseFloat(x) * (realRange / parseFloat(oldSpecs.width)) + oldSpecs.minR;
@@ -62,17 +71,19 @@ var MandelbrotSpecCalculationService = function(){
 
         var newIteration = ((1 - percentage) + 1)*oldSpecs.iterations;
 
-        return specFactory(oldSpecs.width, oldSpecs.height, newIteration,
+        return specFactory.create(oldSpecs.width, oldSpecs.height, newIteration,
             cReal - realOffset, cImaginary - imaginaryOffset, cReal + realOffset, cImaginary + imaginaryOffset);
     }
 
-
-};
+    return {
+        calculate: calculate
+    }
+}(specFactory);
 
 var InputViewModel = new function(mandelbrotService, mandelbrotSpecCalculationService){
 
-    getZoomInPercentage = function(){ return 90; }
-    getDefaultSpecs = function()
+    var getZoomInPercentage = function(){ return 90; }
+    var getDefaultSpecs = function()
     {
         return{
             width: getMandelbrotView().offsetWidth,
@@ -84,7 +95,7 @@ var InputViewModel = new function(mandelbrotService, mandelbrotSpecCalculationSe
             maxI: 1.5
         }
     }
-    getMandelbrotView = function(){ return document.getElementById("mandelbrotView");}
+    var getMandelbrotView = function(){ return document.getElementById("mandelbrotView");}
 
     var currentSpecs = getDefaultSpecs();
 
@@ -97,9 +108,9 @@ var InputViewModel = new function(mandelbrotService, mandelbrotSpecCalculationSe
         var x = event.clientX - dim.left;
         var y = event.clientY - dim.top;
 
-        mandelbrotService.GetMandelbrot(currentSpecs);
+        mandelbrotService.getMandelbrot(currentSpecs);
 
-        zoomedSpecs = mandelbrotSpecCalculationService.Calculate(currentSpecs, x, y, getZoomInPercentage());
+        zoomedSpecs = mandelbrotSpecCalculationService.calculate(currentSpecs, x, y, getZoomInPercentage());
 
         currentSpecs = zoomedSpecs;
     };
@@ -107,12 +118,11 @@ var InputViewModel = new function(mandelbrotService, mandelbrotSpecCalculationSe
     this.Init = function(){
 
         var defaultSpecs = getDefaultSpecs();
-        mandelbrotService.OpenWebSocket(defaultSpecs, function(data){
+        mandelbrotService.openWebSocket(defaultSpecs, function(data){
             getMandelbrotView().src = "data:image/jpg;base64," + data;
         });
-
 
         getMandelbrotView().onclick = ClickOnMandelbrot;
     };
 
-}(new MandelbrotService(), new MandelbrotSpecCalculationService ());
+}(mandelbrotService, mandelbrotSpecCalculationService);
