@@ -22,17 +22,19 @@ func main() {
 }
 
 func mandelbrotHandler(ws *websocket.Conn) {
-	msg := make([]byte, 512)
-	if _, err := ws.Read(msg); err != nil {
-		fmt.Printf("Failed to read message with error: %s.\n", err.Error())
-	}
+	for {
+		msg := make([]byte, 512)
+		if _, err := ws.Read(msg); err != nil {
+			fmt.Printf("Failed to read message with error: %s.\n", err.Error())
+		}
 
-	specs := specs.ReadFromString(string(msg))
-	generator := mandelbrot.NewMandelbrotGenerator(specs)
-	imageSize := specs.Height * specs.Width
+		specs := specs.ReadFromString(string(msg))
+		generator := mandelbrot.NewMandelbrotGenerator(specs)
+		imageSize := specs.Height * specs.Width
 
-	for sharpnessFactor := specs.InitialSharpnessFactor; sharpnessFactor > 0; sharpnessFactor /= 2 {
-		calculateMandelbrot(ws, generator, sharpnessFactor, imageSize)
+		for sharpnessFactor := specs.InitialSharpnessFactor; sharpnessFactor > 0; sharpnessFactor /= 2 {
+			calculateMandelbrot(ws, generator, sharpnessFactor, imageSize)
+		}
 	}
 }
 

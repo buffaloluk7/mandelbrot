@@ -1,19 +1,36 @@
-var MandelbrotService = function(inputProvider){
+var mandelbrotContainer = document.getElementById("mandelbrot");
+var webSocket = new WebSocket('ws://localhost:8080/mandelbrot', []);
+
+var MandelbrotService = function(){
     if (!(this instanceof MandelbrotService )) return new MandelbrotService  ();
 
-    this.GetMandelbrot = function(specs, callback){
-        var webSocket = new WebSocket('ws://localhost:8080/mandelbrot', []);
-        webSocket.onerror = function (error) {
-            console.log('WebSocket Error ' + error);
-        };
-        webSocket.onmessage = function (e) {
-            callback(e.data);
-        };
-        webSocket.onopen = function(e){
-            var webSocketArguments = generateRequestArgument(specs);
-            console.log(webSocketArguments);
-            webSocket.send(webSocketArguments);
-        }
+    var initialSpecs = {
+                           width: 1000,
+                           height: 750,
+                           iterations: 100,
+                           minR: -3,
+                           minI: -1.5,
+                           maxR: 1,
+                           maxI: 1.5
+                       }
+
+    webSocket.onerror = function (error) {
+        console.log('WebSocket Error ' + error);
+    };
+    webSocket.onmessage = function (e) {
+        mandelbrotContainer.src  = "data:image/jpg;base64," + e.data;
+    };
+    webSocket.onopen = function(e){
+        var webSocketArguments = generateRequestArgument(initialSpecs);
+        console.log(webSocketArguments);
+        webSocket.send(webSocketArguments);
+    }
+     webSocket.onclose = function(e) {
+        console.log("DISCONNECTED");
+    }
+
+    this.GetMandelbrot = function(specs) {
+        webSocket.send(generateRequestArgument(specs));
     }
 
     generateRequestArgument = function(specs){
@@ -58,7 +75,7 @@ var MandelbrotSpecCalculationService = function(){
 
 };
 
-var InputViewModel = new function(mandelbrotService, mandelbrotSpecCalculationService){
+var InputViewModel = new function(mandelbrotService, mandelbrotContainer, mandelbrotSpecCalculationService){
 
     getZoomInPercentage = function(){ return 90; }
     getDefaultSpecs = function()
@@ -75,24 +92,25 @@ var InputViewModel = new function(mandelbrotService, mandelbrotSpecCalculationSe
     }
 
     var currentSpecs = getDefaultSpecs();
-    var mandelbrotContainer = document.getElementById("mandelbrot");
 
     var ClickOnMandelbrot = function (event)
     {
         console.log(currentSpecs);
 
-        mandelbrotService.GetMandelbrot(currentSpecs, function(imageData){
-            mandelbrotContainer.src  = "data:image/jpg;base64," + imageData;
-        });
+        var e = event.target;
+        var dim = e.getBoundingClientRect();
+        var x = event.clientX - dim.left;
+        var y = event.clientY - dim.top;
 
-        zoomedSpecs = mandelbrotSpecCalculationService.Calculate(currentSpecs, event.screenX, event.screenY, getZoomInPercentage());
+        mandelbrotService.GetMandelbrot(currentSpecs);
+
+        zoomedSpecs = mandelbrotSpecCalculationService.Calculate(currentSpecs, x, y, getZoomInPercentage());
 
         currentSpecs = zoomedSpecs;
     };
 
     this.Init = function(){
-        mandelbrotContainer = mandelbrotContainer;
         mandelbrotContainer.onclick = ClickOnMandelbrot;
     };
 
-}(new MandelbrotService(), new MandelbrotSpecCalculationService ());
+}(new MandelbrotService(), mandelbrotContainer, new MandelbrotSpecCalculationService ());
