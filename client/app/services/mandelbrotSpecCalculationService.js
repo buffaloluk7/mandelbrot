@@ -1,40 +1,47 @@
-var mandelbrotSpecCalculationService = function(){
+var mandelbrotSpecCalculationService = function () {
 
-    var specFactory = function(){
-        var create = function (width, height, iterations, minR, minI, maxR, maxI) {
-            return {
-                width: width,
-                height: height,
-                iterations: iterations,
-                minR: minR,
-                minI: minI,
-                maxR: maxR,
-                maxI: maxI
-            }
-        }
+    var calculate = function (oldSpecs, x, y, percentage) {
 
-        return {
-            create: create
-        }
-    }();
-
-    var calculate = function(oldSpecs, x, y, percentage){
-
-        realRange = oldSpecs.maxR - oldSpecs.minR;
-        cReal = parseFloat(x) * (realRange / parseFloat(oldSpecs.width)) + oldSpecs.minR;
-        imaginaryRange = oldSpecs.maxI - oldSpecs.minI;
-        cImaginary = parseFloat(y) * (imaginaryRange / parseFloat(oldSpecs.height)) + oldSpecs.minI;
+        var width = oldSpecs.maxR - oldSpecs.minR;
+        var clickX = parseFloat(x) * (width / parseFloat(oldSpecs.width)) + oldSpecs.minR;
+        var height = oldSpecs.maxI - oldSpecs.minI;
+        var clickY = parseFloat(y) * (height / parseFloat(oldSpecs.height)) + oldSpecs.minI;
 
         percentage = (percentage > 1) ? percentage / 100 : percentage;
 
-        var realOffset = realRange * percentage / 2;
-        var imaginaryOffset = imaginaryRange * percentage / 2;
+        var newWidth = width * percentage;
+        var deltaWidth = (width - newWidth);
 
-        var newIteration = ((1 - percentage) + 1)*oldSpecs.iterations;
+        var rightDistance = oldSpecs.maxR - clickX;
+        var rightRelative = rightDistance / width;
+        var rightOffset = deltaWidth * rightRelative;
+        var leftOffset = (deltaWidth - rightOffset) * -1;
 
-        return specFactory.create(oldSpecs.width, oldSpecs.height, newIteration,
-            cReal - realOffset, cImaginary - imaginaryOffset, cReal + realOffset, cImaginary + imaginaryOffset);
-    }
+
+        var newHeight = height * percentage;
+        var deltaHeight = height - newHeight;
+
+        var upDistance = oldSpecs.maxI - clickY;
+        var upRelative = upDistance / height;
+        var upOffset = deltaHeight * upRelative;
+        var downOffset = (deltaHeight - upOffset) * -1;
+
+        var additionalIterations = (1 - percentage) * oldSpecs.iterations;
+
+        var newSpec = {
+            width: oldSpecs.width,
+            height: oldSpecs.height,
+            iterations: oldSpecs.iterations + additionalIterations,
+            minR: oldSpecs.minR - leftOffset,
+            maxR: oldSpecs.maxR - rightOffset,
+            minI: oldSpecs.minI - downOffset,
+            maxI: oldSpecs.maxI - upOffset
+        };
+
+        console.log(newSpec);
+
+        return newSpec;
+    };
 
     return {
         calculate: calculate
