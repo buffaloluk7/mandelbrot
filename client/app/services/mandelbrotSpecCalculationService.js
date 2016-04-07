@@ -1,40 +1,47 @@
-var mandelbrotSpecCalculationService = function(){
+var mandelbrotSpecCalculationService = function () {
 
-    var specFactory = function(){
-        var create = function (width, height, iterations, minR, minI, maxR, maxI) {
-            return {
-                width: width,
-                height: height,
-                iterations: iterations,
-                minR: minR,
-                minI: minI,
-                maxR: maxR,
-                maxI: maxI
-            }
-        }
+    var calculate = function (oldSpecs, x, y, percentage) {
 
-        return {
-            create: create
-        }
-    }();
-
-    var calculate = function(oldSpecs, x, y, percentage){
-
-        realRange = oldSpecs.maxR - oldSpecs.minR;
-        cReal = parseFloat(x) * (realRange / parseFloat(oldSpecs.width)) + oldSpecs.minR;
-        imaginaryRange = oldSpecs.maxI - oldSpecs.minI;
-        cImaginary = parseFloat(y) * (imaginaryRange / parseFloat(oldSpecs.height)) + oldSpecs.minI;
+        var widthComplex = oldSpecs.maxR.minus(oldSpecs.minR);
+        var clickX = new BigNumber(x).times(widthComplex.dividedBy(oldSpecs.width)).plus(oldSpecs.minR);
+        var heightComplex = oldSpecs.maxI.minus(oldSpecs.minI);
+        var clickY = new BigNumber(y).times(heightComplex.dividedBy(oldSpecs.height)).plus(oldSpecs.minI);
 
         percentage = (percentage > 1) ? percentage / 100 : percentage;
 
-        var realOffset = realRange * percentage / 2;
-        var imaginaryOffset = imaginaryRange * percentage / 2;
+        var newWidth = widthComplex.times(percentage);
+        var deltaWidth = widthComplex.minus(newWidth);
 
-        var newIteration = ((1 - percentage) + 1)*oldSpecs.iterations;
+        var rightDistance = oldSpecs.maxR.minus(clickX);
+        var rightRelative = rightDistance.dividedBy(widthComplex);
+        var rightOffset = deltaWidth.times(rightRelative);
+        var leftOffset = deltaWidth.minus(rightOffset).times(-1);
 
-        return specFactory.create(oldSpecs.width, oldSpecs.height, newIteration,
-            cReal - realOffset, cImaginary - imaginaryOffset, cReal + realOffset, cImaginary + imaginaryOffset);
-    }
+
+        var newHeight = heightComplex.times(percentage);
+        var deltaHeight = heightComplex.minus(newHeight);
+
+        var upDistance = oldSpecs.maxI.minus(clickY);
+        var upRelative = upDistance.dividedBy(heightComplex);
+        var upOffset = deltaHeight.times(upRelative);
+        var downOffset = deltaHeight.minus(upOffset).times(-1);
+
+        var additionalIterations = (1 - percentage) * oldSpecs.iterations;
+
+        var newSpec = {
+            width: oldSpecs.width,
+            height: oldSpecs.height,
+            iterations: oldSpecs.iterations + additionalIterations,
+            minR: oldSpecs.minR.minus(leftOffset),
+            maxR: oldSpecs.maxR.minus(rightOffset),
+            minI: oldSpecs.minI.minus(downOffset),
+            maxI: oldSpecs.maxI.minus(upOffset)
+        };
+
+        console.log(newSpec);
+
+        return newSpec;
+    };
 
     return {
         calculate: calculate
