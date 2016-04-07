@@ -23,7 +23,7 @@ func main() {
 
 func mandelbrotHandler(ws *websocket.Conn) {
 	for {
-		msg := make([]byte, 512)
+		msg := make([]byte, 2048)
 		if _, err := ws.Read(msg); err != nil {
 			fmt.Printf("Failed to read message with error: %s.\n", err.Error())
 		}
