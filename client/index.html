@@ -5,17 +5,20 @@
     <title>Mandelbrot</title>
 
     <style>
-        html, body, div{
+        html, body, div {
             padding: 0;
             margin: 0;
             width: 100%;
             height: 100%;
         }
 
-        #mandelbrotView{
+        #mandelbrotView {
             position: fixed;
             top: 0;
             left: 0;
+
+            width: 100%;
+            height: 100%;
 
             /* Preserve aspet ratio */
             min-width: 100%;
@@ -26,7 +29,7 @@
 
 <body>
 
-<img id="mandelbrotView" src="" id="mandelbrot" width="1000" height="750"/>
+<img id="mandelbrotView" draggable="true" src=""/>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bignumber.js/2.3.0/bignumber.min.js"></script>
 <script src="app/InputViewModel.js"></script>
