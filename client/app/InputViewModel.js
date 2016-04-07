@@ -25,7 +25,7 @@ var InputViewModel = function (mandelbrotService, mandelbrotSpecCalculationServi
         var zoomIn = event.wheelDelta > 0;
         _currentSpecs = mandelbrotSpecCalculationService.calculate(_currentSpecs, x, y, zoomIn ? 90 : 110);
 
-        mandelbrotService.getMandelbrot(_currentSpecs);
+        mandelbrotService.sendMandelbrotCalculationRequest(_currentSpecs);
     };
 
     var init = function () {

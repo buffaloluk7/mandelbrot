@@ -21,7 +21,7 @@ var mandelbrotService = function () {
         }
     };
 
-    var getMandelbrot = function (specs) {
+    var sendMandelbrotCalculationRequest = function (specs) {
         if (webSocket == null) return;
         var specsAsString = _generateRequestArgument(specs);
 
@@ -38,7 +38,7 @@ var mandelbrotService = function () {
     };
 
     return {
-        getMandelbrot: getMandelbrot,
+        sendMandelbrotCalculationRequest: sendMandelbrotCalculationRequest,
         openWebSocket: openWebSocket
     };
 }();
