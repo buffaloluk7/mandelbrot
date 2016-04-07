@@ -5,10 +5,10 @@ QUnit.test("iterationsAreCalculatedCorrect", function (assert) {
         width: 1000,
         height: 750,
         iterations: 100,
-        minR: -3,
-        minI: -1.5,
-        maxR: 1,
-        maxI: 1.5
+        minR: new BigNumber(-3),
+        minI: new BigNumber(-1.5),
+        maxR: new BigNumber(1),
+        maxI: new BigNumber(1.5)
     };
 
     var firstRun = sut.calculate(mb0Specs, 500, 375, 90);
@@ -25,10 +25,10 @@ QUnit.test("realAndImaginaryValuesAreCorrect", function (assert) {
         width: 1000,
         height: 750,
         iterations: 100,
-        minR: -3,
-        minI: -1.5,
-        maxR: 1,
-        maxI: 1.5
+        minR: new BigNumber(-3),
+        minI: new BigNumber(-1.5),
+        maxR: new BigNumber(1),
+        maxI: new BigNumber(1.5)
     };
 
     // click is at -1 | 0
@@ -38,6 +38,4 @@ QUnit.test("realAndImaginaryValuesAreCorrect", function (assert) {
     assert.floatEqual(firstRun.minR, -2.4, 0.0001);
     assert.floatEqual(firstRun.maxI, 1.2, 0.0001);
     assert.floatEqual(firstRun.minI, 1.2, 0.0001);
-
-    var secondRun = sut.calculate(firstRun, 750, 375, 80);
 });

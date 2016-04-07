@@ -2,29 +2,29 @@ var mandelbrotSpecCalculationService = function () {
 
     var calculate = function (oldSpecs, x, y, percentage) {
 
-        var width = oldSpecs.maxR - oldSpecs.minR;
-        var clickX = parseFloat(x) * (width / parseFloat(oldSpecs.width)) + oldSpecs.minR;
-        var height = oldSpecs.maxI - oldSpecs.minI;
-        var clickY = parseFloat(y) * (height / parseFloat(oldSpecs.height)) + oldSpecs.minI;
+        var widthComplex = oldSpecs.maxR.minus(oldSpecs.minR);
+        var clickX = new BigNumber(x).times(widthComplex.dividedBy(oldSpecs.width)).plus(oldSpecs.minR);
+        var heightComplex = oldSpecs.maxI.minus(oldSpecs.minI);
+        var clickY = new BigNumber(y).times(heightComplex.dividedBy(oldSpecs.height)).plus(oldSpecs.minI);
 
         percentage = (percentage > 1) ? percentage / 100 : percentage;
 
-        var newWidth = width * percentage;
-        var deltaWidth = (width - newWidth);
+        var newWidth = widthComplex.times(percentage);
+        var deltaWidth = widthComplex.minus(newWidth);
 
-        var rightDistance = oldSpecs.maxR - clickX;
-        var rightRelative = rightDistance / width;
-        var rightOffset = deltaWidth * rightRelative;
-        var leftOffset = (deltaWidth - rightOffset) * -1;
+        var rightDistance = oldSpecs.maxR.minus(clickX);
+        var rightRelative = rightDistance.dividedBy(widthComplex);
+        var rightOffset = deltaWidth.times(rightRelative);
+        var leftOffset = deltaWidth.minus(rightOffset).times(-1);
 
 
-        var newHeight = height * percentage;
-        var deltaHeight = height - newHeight;
+        var newHeight = heightComplex.times(percentage);
+        var deltaHeight = heightComplex.minus(newHeight);
 
-        var upDistance = oldSpecs.maxI - clickY;
-        var upRelative = upDistance / height;
-        var upOffset = deltaHeight * upRelative;
-        var downOffset = (deltaHeight - upOffset) * -1;
+        var upDistance = oldSpecs.maxI.minus(clickY);
+        var upRelative = upDistance.dividedBy(heightComplex);
+        var upOffset = deltaHeight.times(upRelative);
+        var downOffset = deltaHeight.minus(upOffset).times(-1);
 
         var additionalIterations = (1 - percentage) * oldSpecs.iterations;
 
@@ -32,10 +32,10 @@ var mandelbrotSpecCalculationService = function () {
             width: oldSpecs.width,
             height: oldSpecs.height,
             iterations: oldSpecs.iterations + additionalIterations,
-            minR: oldSpecs.minR - leftOffset,
-            maxR: oldSpecs.maxR - rightOffset,
-            minI: oldSpecs.minI - downOffset,
-            maxI: oldSpecs.maxI - upOffset
+            minR: oldSpecs.minR.minus(leftOffset),
+            maxR: oldSpecs.maxR.minus(rightOffset),
+            minI: oldSpecs.minI.minus(downOffset),
+            maxI: oldSpecs.maxI.minus(upOffset)
         };
 
         console.log(newSpec);

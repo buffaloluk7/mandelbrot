@@ -10,10 +10,10 @@ var InputViewModel = function (mandelbrotService, mandelbrotSpecCalculationServi
             width: _mandelbrotView.offsetWidth,
             height: _mandelbrotView.offsetHeight,
             iterations: 100,
-            minR: -3,
-            minI: -1.5,
-            maxR: 1,
-            maxI: 1.5
+            minR: new BigNumber(-3),
+            minI: new BigNumber(-1.5),
+            maxR: new BigNumber(1),
+            maxI: new BigNumber(1.5)
         }
     };
 

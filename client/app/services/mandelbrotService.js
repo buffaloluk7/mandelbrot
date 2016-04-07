@@ -15,22 +15,22 @@ var mandelbrotService = function () {
             var webSocketArguments = _generateRequestArgument(initialSpecs);
             console.log(webSocketArguments);
             webSocket.send(webSocketArguments);
-        }
+        };
         webSocket.onclose = function (e) {
             console.log("DISCONNECTED");
         }
-    }
+    };
 
     var getMandelbrot = function (specs) {
         if (webSocket == null) return;
         webSocket.send(_generateRequestArgument(specs));
-    }
+    };
 
     var _generateRequestArgument = function (specs) {
         var nl = function (value) {
             return value + ";"
         };
-        return nl(specs.width) + nl(specs.height) + nl(specs.minR) + nl(specs.minI) + nl(specs.maxR) + nl(specs.maxI) + nl(specs.iterations);
+        return nl(specs.width) + nl(specs.height) + nl(specs.minR.toNumber()) + nl(specs.minI.toNumber()) + nl(specs.maxR.toNumber()) + nl(specs.maxI.toNumber()) + nl(specs.iterations);
     };
 
     return {
