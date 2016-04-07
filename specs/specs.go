@@ -4,7 +4,6 @@ import (
 	"os"
 	"bufio"
 	"strconv"
-	"io"
 	"strings"
 )
 
@@ -31,9 +30,7 @@ func NewSpecs(width, height int, minR, minI, maxR, maxI float64, maximumNumberOf
 }
 
 func ReadFromString(specs string) *Specs {
-	r := strings.NewReader(specs)
-
-	return fromReader(r)
+	return fromString(specs)
 }
 
 func ReadFromFile(filePath string) *Specs {
@@ -43,28 +40,30 @@ func ReadFromFile(filePath string) *Specs {
 	}
 	defer file.Close()
 
-	return fromReader(file)
-}
-
-func fromReader(r io.Reader) *Specs {
-	scanner := bufio.NewScanner(r)
-	var arguments []string
+	scanner := bufio.NewScanner(file)
+	var arguments string
 	for scanner.Scan() {
-		arguments = strings.Split(scanner.Text(), ";")
+		arguments = scanner.Text()
 	}
 
 	if err := scanner.Err(); err != nil {
 		panic(err)
 	}
 
+	return fromString(arguments)
+}
+
+func fromString(arguments string) *Specs {
+	splittedArguments := strings.Split(arguments, ";")
+
 	return NewSpecs(
-		(int)(parseFloat(arguments[0])),
-		(int)(parseFloat(arguments[1])),
-		parseFloat(arguments[2]),
-		parseFloat(arguments[3]),
-		parseFloat(arguments[4]),
-		parseFloat(arguments[5]),
-		(int)(parseFloat(arguments[6])),
+		(int)(parseFloat(splittedArguments[0])),
+		(int)(parseFloat(splittedArguments[1])),
+		parseFloat(splittedArguments[2]),
+		parseFloat(splittedArguments[3]),
+		parseFloat(splittedArguments[4]),
+		parseFloat(splittedArguments[5]),
+		(int)(parseFloat(splittedArguments[6])),
 		5,
 		8)
 }
